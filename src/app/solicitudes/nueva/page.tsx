@@ -18,6 +18,17 @@ export default function NuevaSolicitudPage() {
     tipoPago: 'efectivo' | 'transferencia_bancaria';
     requiereFactura: boolean;
     notas: string;
+    calle: string;
+    numero: string;
+    colonia: string;
+    ciudad: string;
+    estado: string;
+    codigoPostal: string;
+    ubicacion: {
+      lat: number;
+      lng: number;
+      address: string;
+    };
   }>({
     nombreCliente: '',
     telefono: '',
@@ -27,6 +38,17 @@ export default function NuevaSolicitudPage() {
     tipoPago: 'efectivo',
     requiereFactura: false,
     notas: '',
+    calle: '',
+    numero: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    ubicacion: {
+      lat: 0,
+      lng: 0,
+      address: ''
+    }
   });
 
   // Manejar cambios en los campos del formulario
@@ -62,13 +84,19 @@ export default function NuevaSolicitudPage() {
     try {
 
       // Preparar los datos para el servicio
+      // Construir la dirección completa
+      const direccionCompleta = `${formData.calle} ${formData.numero}, ${formData.colonia}, ${formData.ciudad}, ${formData.estado}, ${formData.codigoPostal}`;
+      
       const datosSolicitud = {
         nombre_cliente_o_empresa: formData.nombreCliente,
         telefono_whatsapp: `${formData.codigoPais}${formData.telefono}`,
+        direccion_completa: direccionCompleta,
+        latitud: formData.ubicacion.lat,
+        longitud: formData.ubicacion.lng,
         cantidad_banos: Number(formData.cantidadBanos),
         tipo_renta: formData.tipoRenta,
         tipo_pago: formData.tipoPago,
-        requiere_factura: formData.requiereFactura,
+        requiere_factura: formData.requiereFactura || false,
         notas: formData.notas || undefined,
         estado: 'pendiente' as const
       };
