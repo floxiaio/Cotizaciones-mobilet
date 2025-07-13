@@ -1,0 +1,105 @@
+/* Importar la fuente primero */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Importar estilos base de Tailwind */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --primary: #0066ff;
+  --primary-light: #4d94ff;
+  --secondary: #ff5e1a;
+  --secondary-light: #ff7d4d;
+  --background: #f5f7fa;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a5568;
+}
+
+/* Asegurar que los estilos base se apliquen correctamente */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-[#f0f7ff] to-[#fff5f0] min-h-screen text-[var(--text-primary)];
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-[var(--card-bg)] backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 overflow-hidden;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .btn {
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-200 ease-in-out transform hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white hover:shadow-lg focus:ring-[var(--primary-light)];
+    box-shadow: 0 4px 14px 0 rgba(77, 148, 255, 0.3);
+  }
+  
+  .btn-primary:hover {
+    box-shadow: 0 6px 20px 0 rgba(77, 148, 255, 0.4);
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all duration-200 text-[var(--text-primary)] placeholder-gray-400;
+    backdrop-filter: blur(10px);
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-[var(--text-secondary)] mb-1.5;
+  }
+}
+
+/* Animaciones sutiles */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+/* Estilos para el mapa */
+.leaflet-container {
+  @apply rounded-2xl border border-gray-200 shadow-sm;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Efecto de vidrio esmerilado */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Transiciones suaves */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

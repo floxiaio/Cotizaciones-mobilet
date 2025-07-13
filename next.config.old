@@ -1,0 +1,60 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    domains: ['localhost'],
+    unoptimized: true, // Deshabilitar optimización de imágenes si no es necesaria
+  },
+  // Configuración de alias de ruta
+  webpack: (config, { isServer }) => {
+    config.resolve.alias['@'] = __dirname + '/src';
+    
+    // Asegurar que los estilos de los módulos se carguen correctamente
+    config.module.rules.push({
+      test: /\.css$/i,
+      use: [
+        'style-loader',
+        'css-loader',
+        'postcss-loader'
+      ]
+    });
+    
+    return config;
+  },
+  // Configuración para optimización de compilación
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  // Mejorar el rendimiento
+  productionBrowserSourceMaps: false, // Deshabilitar source maps en producción
+  swcMinify: true, // Usar SWC para minificación
+  // Configuración de caché
+  experimental: {
+    optimizeCss: true, // Optimizar CSS
+    scrollRestoration: true, // Mejorar la navegación
+  },
+  // Configuración de encabezados para fuentes y estilos
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;
