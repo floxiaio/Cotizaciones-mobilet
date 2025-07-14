@@ -50,14 +50,15 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
     setValue,
     watch,
     trigger,
-    reset
+    reset,
+    getValues
   } = useForm<SolicitudFormData>({
     resolver: yupResolver(solicitudSchema) as any,
     mode: 'onChange',
     defaultValues: {
-      cantidadBanos: 1,
-      tipoRenta: 'evento',
-      tipoPago: 'efectivo',
+      cantidadBanos: undefined,
+      tipoRenta: undefined,
+      tipoPago: undefined,
       requiereFactura: false,
       notas: '',
     },
@@ -84,29 +85,34 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const onSubmit = async (data: SolicitudFormData) => {
+  const onSubmit = async (formData: SolicitudFormData) => {
     setIsSubmitting(true);
     setSubmitError('');
     
     try {
+      // Validar que los campos requeridos tengan valor
+      if (formData.cantidadBanos === undefined || !formData.tipoRenta || !formData.tipoPago) {
+        throw new Error('Por favor completa todos los campos requeridos');
+      }
+      
       // Combinar los campos de dirección en un solo string
-      const direccionCompleta = `${data.calle} ${data.numero}, ${data.colonia}`;
+      const direccionCompleta = `${formData.calle} ${formData.numero}, ${formData.colonia}`;
       
       // Asegurar que el teléfono tenga el prefijo +52
-      const telefonoCompleto = `+52${data.telefono}`;
+      const telefonoCompleto = `+52${formData.telefono}`;
       
       // Preparar los datos para enviar a Supabase
       const solicitudData = {
-        nombre_cliente_o_empresa: data.nombreCliente,
+        nombre_cliente_o_empresa: formData.nombreCliente,
         telefono_whatsapp: telefonoCompleto,
         direccion_completa: direccionCompleta,
-        latitud: data.ubicacion.lat,
-        longitud: data.ubicacion.lng,
-        cantidad_banos: data.cantidadBanos,
-        tipo_renta: data.tipoRenta,
-        tipo_pago: data.tipoPago === 'transferencia' ? 'transferencia_bancaria' as const : 'efectivo' as const,
-        requiere_factura: data.requiereFactura,
-        notas: data.notas || '',
+        latitud: formData.ubicacion.lat,
+        longitud: formData.ubicacion.lng,
+        cantidad_banos: formData.cantidadBanos,
+        tipo_renta: formData.tipoRenta as 'obra' | 'evento',
+        tipo_pago: formData.tipoPago === 'transferencia' ? 'transferencia_bancaria' as const : 'efectivo' as const,
+        requiere_factura: formData.requiereFactura,
+        notas: formData.notas || '',
         estado: 'pendiente' as const
       };
 
@@ -287,12 +293,19 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                   <select
                     id="cantidadBanos"
                     className={`${inputStyles} ${errors.cantidadBanos ? 'border-red-400' : ''}`}
+                    defaultValue=""
                     {...register('cantidadBanos')}
                   >
+                    <option value="" disabled>Selecciona una opción</option>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                      <option key={num} value={num}>{num} baño{num > 1 ? 's' : ''}</option>
+                      <option key={num} value={num}>
+                        {num} baño{num > 1 ? 's' : ''}
+                      </option>
                     ))}
                   </select>
+                  {errors.cantidadBanos && (
+                    <p className={errorStyles}>{errors.cantidadBanos.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -302,14 +315,16 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                   <select
                     id="tipoRenta"
                     className={`${inputStyles} ${errors.tipoRenta ? 'border-red-400' : ''}`}
+                    defaultValue=""
                     {...register('tipoRenta')}
                   >
-                    {tipoRentaOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
+                    <option value="" disabled>Selecciona una opción</option>
+                    <option value="evento">Evento</option>
+                    <option value="obra">Obra</option>
                   </select>
+                  {errors.tipoRenta && (
+                    <p className={errorStyles}>{errors.tipoRenta.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -319,14 +334,16 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                   <select
                     id="tipoPago"
                     className={`${inputStyles} ${errors.tipoPago ? 'border-red-400' : ''}`}
+                    defaultValue=""
                     {...register('tipoPago')}
                   >
-                    {tipoPagoOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
+                    <option value="" disabled>Selecciona una opción</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia bancaria</option>
                   </select>
+                  {errors.tipoPago && (
+                    <p className={errorStyles}>{errors.tipoPago.message}</p>
+                  )}
                 </div>
 
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100 transition-all duration-200 hover:border-[var(--primary)/50] hover:shadow-sm">

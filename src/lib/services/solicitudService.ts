@@ -1,7 +1,4 @@
-import { createClient } from '../supabase/client';
-
-// Crear una nueva instancia del cliente para este servicio
-const supabase = createClient();
+import { supabase } from '../supabase';
 
 // Función para verificar la conexión con Supabase
 async function checkSupabaseConnection() {
@@ -20,9 +17,11 @@ async function checkSupabaseConnection() {
 }
 
 // Verificar la conexión al cargar el módulo
-checkSupabaseConnection().then(success => {
-  console.log('Verificación de conexión con Supabase:', success ? 'Éxito' : 'Falló');
-});
+if (typeof window !== 'undefined') {
+  checkSupabaseConnection().then(success => {
+    console.log('Verificación de conexión con Supabase:', success ? 'Éxito' : 'Falló');
+  });
+}
 
 export interface Solicitud {
   nombre_cliente_o_empresa: string;

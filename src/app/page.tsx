@@ -82,7 +82,12 @@ export default function Home() {
               )}
               
               <div className="mt-8 text-center text-sm text-[var(--text-secondary)]">
-                <p>¿Necesitas ayuda? Llámanos al <a href="tel:+525555555555" className="text-[var(--primary)] hover:underline">55-5555-5555</a></p>
+                <p className="whitespace-nowrap">
+                  ¿Necesitas ayuda? Llámanos al{' '}
+                  <a href="tel:+525555555555" className="text-[var(--primary)] hover:underline whitespace-nowrap">
+                    55-5555-5555
+                  </a>
+                </p>
               </div>
             </div>
           </div>

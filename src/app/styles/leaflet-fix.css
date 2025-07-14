@@ -1,6 +1,7 @@
-/* Fix para los íconos de Leaflet */
+@charset "UTF-8";
 @import 'leaflet/dist/leaflet.css';
 
+/* Fix para los íconos de Leaflet */
 .leaflet-marker-icon,
 .leaflet-marker-shadow {
   display: block;

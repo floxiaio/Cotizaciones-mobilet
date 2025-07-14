@@ -37,6 +37,10 @@ export const solicitudSchema = yup.object().shape({
   
   cantidadBanos: yup
     .number()
+    .transform((value, originalValue) => 
+      originalValue === '' ? undefined : Number(originalValue)
+    )
+    .typeError('La cantidad de baños es requerida')
     .required('La cantidad de baños es requerida')
     .min(1, 'Mínimo 1 baño')
     .max(30, 'Máximo 30 baños')
@@ -44,11 +48,15 @@ export const solicitudSchema = yup.object().shape({
     
   tipoRenta: yup
     .string()
+    .transform(value => (value === '' ? undefined : value))
+    .typeError('El tipo de renta es requerido')
     .oneOf(['obra', 'evento'], 'Selecciona un tipo de renta válido')
     .required('El tipo de renta es requerido'),
     
   tipoPago: yup
     .string()
+    .transform(value => (value === '' ? undefined : value))
+    .typeError('El método de pago es requerido')
     .oneOf(['transferencia', 'efectivo'], 'Selecciona un método de pago válido')
     .required('El método de pago es requerido'),
     
@@ -64,4 +72,23 @@ export const solicitudSchema = yup.object().shape({
     .max(500, 'Las notas no pueden tener más de 500 caracteres')
 });
 
-export type SolicitudFormData = yup.InferType<typeof solicitudSchema>;
+// Definir el tipo base a partir del esquema
+type BaseSolicitudType = yup.InferType<typeof solicitudSchema>;
+
+export type SolicitudFormData = {
+  nombreCliente: string;
+  telefono: string;
+  ubicacion: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
+  calle: string;
+  numero: string;
+  colonia: string;
+  cantidadBanos?: number;
+  tipoRenta?: 'obra' | 'evento';
+  tipoPago?: 'transferencia' | 'efectivo';
+  requiereFactura: boolean;
+  notas?: string | null;
+}

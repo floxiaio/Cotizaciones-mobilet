@@ -1,0 +1,207 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import L from 'leaflet';
+import { useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Coordenadas por defecto (San Andrés Cholula, Puebla)
+const DEFAULT_CENTER: [number, number] = [19.0514, -98.3272];
+
+// Configuración de MapTiler
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
+
+// Configuración de íconos para Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+// Componente de carga
+const MapLoading = () => (
+  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+    <div className="animate-pulse text-gray-500">Cargando mapa...</div>
+  </div>
+);
+
+// Definir los componentes dinámicos
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false, loading: () => <MapLoading /> }
+);
+
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
+
+const ZoomControl = dynamic(
+  () => import('react-leaflet').then((mod) => mod.ZoomControl),
+  { ssr: false }
+);
+
+// Componente para manejar eventos del mapa
+const MapEvents = ({ 
+  onMapMove, 
+  onClick 
+}: { 
+  onMapMove: (map: L.Map) => void;
+  onClick: (e: L.LeafletMouseEvent) => void; 
+}) => {
+  const map = useMapEvents({
+    move: () => onMapMove(map),
+    click: (e: L.LeafletMouseEvent) => onClick(e),
+  });
+
+  return null;
+};
+
+// Tipos para las props
+interface Location {
+  lat: number;
+  lng: number;
+  address?: string;
+}
+
+interface MapInputProps {
+  onLocationSelect: (location: Location) => void;
+  initialLocation?: Location;
+  zoom?: number;
+  className?: string;
+}
+
+const MapInput = ({
+  onLocationSelect,
+  initialLocation = { lat: 19.24647, lng: -98.3942, address: 'Lomas de Angelópolis, Puebla' },
+  zoom = 15,
+  className = ''
+}: MapInputProps) => {
+  const [position, setPosition] = useState<[number, number]>([initialLocation.lat, initialLocation.lng]);
+  const [address, setAddress] = useState(initialLocation.address || '');
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const isDraggingRef = useRef(false);
+
+  // Función para mantener el marcador visible
+  const keepMarkerInView = useCallback((map: L.Map) => {
+    if (!markerRef.current || isDraggingRef.current) return;
+    
+    const marker = markerRef.current;
+    const mapBounds = map.getBounds();
+    const markerLatLng = marker.getLatLng();
+    
+    // Si el marcador está fuera de los límites visibles del mapa
+    if (!mapBounds.contains(markerLatLng)) {
+      // Mover suavemente el mapa para que el marcador sea visible
+      map.panTo(markerLatLng, { animate: true, duration: 1 });
+    }
+  }, []);
+
+  // Función para manejar el clic en el mapa
+  const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
+    const { lat, lng } = e.latlng;
+    setPosition([lat, lng]);
+    
+    // Actualizar la dirección
+    const newAddress = `Ubicación (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
+    setAddress(newAddress);
+    
+    onLocationSelect({
+      lat,
+      lng,
+      address: newAddress
+    });
+  }, [onLocationSelect]);
+
+  // Efecto para configurar el marcador inicial
+  useEffect(() => {
+    if (mapRef.current && initialLocation) {
+      setPosition([initialLocation.lat, initialLocation.lng]);
+      setAddress(initialLocation.address || '');
+    }
+  }, [initialLocation]);
+
+  return (
+    <div className={`relative h-[400px] w-full ${className}`}>
+      <div className="relative h-full w-full rounded-lg overflow-hidden border border-gray-200">
+        <MapContainer
+          center={position}
+          zoom={zoom}
+          style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
+          ref={(map) => {
+            if (map) {
+              mapRef.current = map;
+            }
+          }}
+          bounceAtZoomLimits={false}
+        >
+          <TileLayer
+            url={`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`}
+            attribution='<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
+            noWrap={true}
+            updateWhenIdle={false}
+            updateWhenZooming={false}
+          />
+          
+          <Marker 
+            position={position}
+            ref={(ref) => {
+              if (ref) markerRef.current = ref;
+            }}
+            eventHandlers={{
+              dragstart: () => {
+                isDraggingRef.current = true;
+              },
+              dragend: (e) => {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                setPosition([position.lat, position.lng]);
+                
+                const newAddress = `Ubicación (${position.lat.toFixed(6)}, ${position.lng.toFixed(6)})`;
+                setAddress(newAddress);
+                
+                onLocationSelect({
+                  lat: position.lat,
+                  lng: position.lng,
+                  address: newAddress
+                });
+                
+                isDraggingRef.current = false;
+              }
+            }}
+            draggable={true}
+          >
+            <Popup closeButton={false} autoPan={false}>
+              <div className="text-sm">
+                {address || 'Arrastra el marcador para ajustar'}
+              </div>
+            </Popup>
+          </Marker>
+          
+          <MapEvents 
+            onMapMove={(map) => keepMarkerInView(map)} 
+            onClick={handleMapClick} 
+          />
+          
+          <ZoomControl position="bottomright" />
+        </MapContainer>
+      </div>
+    </div>
+  );
+};
+
+export default MapInput;
