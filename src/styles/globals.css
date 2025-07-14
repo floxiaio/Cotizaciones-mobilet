@@ -1,7 +1,5 @@
-/* Importar la fuente primero */
+/* Importar fuentes y estilos base primero */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-/* Importar estilos base de Tailwind */
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';

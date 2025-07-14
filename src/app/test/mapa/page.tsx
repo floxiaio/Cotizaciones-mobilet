@@ -3,21 +3,23 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 
+import { Location } from '@/components/ui/MapInput';
+
 // Importar el componente de mapa dinámicamente para evitar problemas de SSR
 const MapInput = dynamic(
-  () => import('@/components/ui/MapInput').then(mod => mod.default),
-  { ssr: false }
+  () => import('@/components/ui/MapInput'),
+  { 
+    ssr: false,
+    loading: () => <div className="h-[500px] bg-gray-100 flex items-center justify-center">Cargando mapa...</div>
+  }
 );
 
-type Location = {
-  lat: number;
-  lng: number;
-  address?: string;
+interface ExtendedLocation extends Location {
   displayName?: string;
-};
+}
 
 export default function TestMapaPage() {
-  const [selectedLocation, setSelectedLocation] = useState<Location>({
+  const [selectedLocation, setSelectedLocation] = useState<ExtendedLocation>({
     lat: 19.0440,  // Lomas de Angelópolis, Puebla
     lng: -98.2445,
     address: 'Lomas de Angelópolis, Puebla, México',
@@ -26,12 +28,13 @@ export default function TestMapaPage() {
 
   const handleLocationSelect = (location: Location) => {
     console.log('Ubicación seleccionada:', location);
-    setSelectedLocation({
+    setSelectedLocation(prev => ({
+      ...prev,
       lat: location.lat,
       lng: location.lng,
       address: location.address || 'Sin dirección',
-      displayName: location.displayName || location.address || 'Sin dirección'
-    });
+      displayName: location.address || 'Sin dirección'
+    }));
   };
 
   return (

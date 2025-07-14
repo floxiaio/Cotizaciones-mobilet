@@ -1,6 +1,11 @@
+'use client';
+
 import { ReactNode } from 'react';
-import Header from './Header';
-import Footer from './Footer';
+import dynamic from 'next/dynamic';
+
+// Importar componentes dinámicamente para asegurar que se carguen solo en el cliente
+const Header = dynamic(() => import('./Header'), { ssr: false });
+const Footer = dynamic(() => import('./Footer'), { ssr: false });
 
 type MainLayoutProps = {
   children: ReactNode;
@@ -17,6 +22,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </main>
       
       <Footer />
+      
+      {/* Estilos globales para el layout */}
+      <style jsx global>{`
+        html {
+          scroll-behavior: smooth;
+        }
+      `}</style>
       
       {/* Elementos decorativos */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
