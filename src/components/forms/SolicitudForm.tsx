@@ -433,15 +433,15 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
               )}
               
               <div className="space-y-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                <div className="flex flex-col md:flex-row gap-4 w-full">
+                  <div className="w-full md:w-3/4">
                     <label htmlFor="calle" className={labelStyles}>
                       Calle *
                     </label>
                     <input
                       id="calle"
                       type="text"
-                      className={`${inputStyles} ${errors.calle ? 'border-red-400' : ''}`}
+                      className={`w-full ${inputStyles} ${errors.calle ? 'border-red-400' : ''}`}
                       placeholder="Nombre de la calle"
                       {...register('calle')}
                     />
@@ -450,37 +450,37 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                     )}
                   </div>
 
-                  <div>
+                  <div className="w-full md:w-1/4">
                     <label htmlFor="numero" className={labelStyles}>
                       Número *
                     </label>
                     <input
                       id="numero"
                       type="text"
-                      className={`${inputStyles} ${errors.numero ? 'border-red-400' : ''}`}
-                      placeholder="Número exterior"
+                      className={`w-full ${inputStyles} ${errors.numero ? 'border-red-400' : ''}`}
+                      placeholder="Núm."
                       {...register('numero')}
                     />
                     {errors.numero && (
                       <p className={errorStyles}>{errors.numero.message}</p>
                     )}
                   </div>
+                </div>
 
-                  <div className="md:col-span-2">
-                    <label htmlFor="colonia" className={labelStyles}>
-                      Colonia *
-                    </label>
-                    <input
-                      id="colonia"
-                      type="text"
-                      className={`${inputStyles} ${errors.colonia ? 'border-red-400' : ''}`}
-                      placeholder="Nombre de la colonia o fraccionamiento"
-                      {...register('colonia')}
-                    />
-                    {errors.colonia && (
-                      <p className={errorStyles}>{errors.colonia.message}</p>
-                    )}
-                  </div>
+                <div className="w-full">
+                  <label htmlFor="colonia" className={labelStyles}>
+                    Colonia *
+                  </label>
+                  <input
+                    id="colonia"
+                    type="text"
+                    className={`w-full ${inputStyles} ${errors.colonia ? 'border-red-400' : ''}`}
+                    placeholder="Nombre de la colonia o fraccionamiento"
+                    {...register('colonia')}
+                  />
+                  {errors.colonia && (
+                    <p className={errorStyles}>{errors.colonia.message}</p>
+                  )}
                 </div>
               </div>
 
