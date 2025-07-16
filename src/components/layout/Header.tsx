@@ -12,26 +12,6 @@ export default function Header() {
             </div>
             <span className="text-xl font-bold text-[var(--primary)]">Mobilet</span>
           </Link>
-          
-          {/* Menú de navegación */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="#servicios" className="text-gray-600 hover:text-[var(--primary)] transition-colors">
-              Servicios
-            </Link>
-            <Link href="#cotizar" className="text-gray-600 hover:text-[var(--primary)] transition-colors">
-              Cotizar
-            </Link>
-            <Link href="#contacto" className="text-gray-600 hover:text-[var(--primary)] transition-colors">
-              Contacto
-            </Link>
-          </nav>
-          
-          {/* Menú móvil */}
-          <button className="md:hidden text-gray-600">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
         </div>
       </div>
     </header>
