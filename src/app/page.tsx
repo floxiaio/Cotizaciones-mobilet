@@ -130,9 +130,11 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Pie de página */}
+        {/* Soluciones */}
         <div className="mt-8 text-center text-sm text-[var(--text-secondary)] animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <p>© {new Date().getFullYear()} Mobilet. Todos los derechos reservados. <span className="text-xs">Powered by floxia.io</span></p>
+          <p className="text-gray-600 text-sm mb-4">Soluciones en sanitarios portátiles para eventos y construcción. Calidad y servicio en cada baño.</p>
+          <p>© {new Date().getFullYear()} Mobilet. Todos los derechos reservados.</p>
+          <p className="font-bold mt-2">Powered by floxia.io</p>
         </div>
       </div>
     </div>

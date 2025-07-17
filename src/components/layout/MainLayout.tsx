@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 
 // Importar componentes dinámicamente para asegurar que se carguen solo en el cliente
 const Header = dynamic(() => import('./Header'), { ssr: false });
-const Footer = dynamic(() => import('./Footer'), { ssr: false });
 
 type MainLayoutProps = {
   children: ReactNode;
@@ -20,8 +19,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <main className="flex-grow pt-16">
         {children}
       </main>
-      
-      <Footer />
       
       {/* Estilos globales para el layout */}
       <style jsx global>{`
