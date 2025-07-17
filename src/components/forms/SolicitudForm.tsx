@@ -66,18 +66,38 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
 
   const nextStep = async () => {
     let fieldsToValidate: (keyof SolicitudFormData)[] = [];
+    let isValid = true;
     
     if (currentStep === 1) {
       fieldsToValidate = ['nombreCliente', 'telefono'];
     } else if (currentStep === 2) {
       fieldsToValidate = ['cantidadBanos', 'tipoRenta', 'tipoPago'];
     } else if (currentStep === 3) {
-      fieldsToValidate = ['calle', 'numero', 'colonia', 'ubicacion'];
+      // Validar que se haya seleccionado una ubicación
+      const ubicacion = getValues('ubicacion');
+      if (!ubicacion || !ubicacion.lat || !ubicacion.lng) {
+        toast.error('Por favor selecciona una ubicación en el mapa', {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true
+        });
+        return;
+      }
+      // No necesitamos validar otros campos en este paso
+      isValid = true;
+    } else if (currentStep === 4) {
+      fieldsToValidate = ['calle', 'numero', 'colonia'];
     }
     
-    const isValid = await trigger(fieldsToValidate as any);
+    if (fieldsToValidate.length > 0) {
+      isValid = await trigger(fieldsToValidate as any);
+    }
+    
     if (isValid) {
-      setCurrentStep(prev => Math.min(prev + 1, 3));
+      setCurrentStep(prev => Math.min(prev + 1, 4));
     }
   };
 
@@ -410,30 +430,112 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
             className="space-y-6"
           >
             <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Ubicación exacta</h3>
-              <p className="text-sm text-[var(--text-secondary)] mb-4">Selecciona la ubicación exacta donde requieres el servicio en el mapa.</p>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Ubicación del servicio</h3>
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
+                Por favor, selecciona la ubicación exacta donde se necesitan los baños portátiles.
+                <br />
+                <span className="font-medium">Arrastra el marcador para ajustar la ubicación.</span>
+              </p>
               
-              <div className="h-64 rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-6">
+              <div className="h-[400px] rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm mb-6">
                 <Controller
                   name="ubicacion"
                   control={control}
+                  rules={{ required: "Debes seleccionar una ubicación en el mapa" }}
                   render={({ field: { onChange, value } }) => (
                     <MapInput
-                      onLocationSelect={(location) => onChange(location)}
-                      initialLocation={value || { lat: 19.0400, lng: -98.2476, address: 'Centro Comercial Angelópolis, Puebla' }}
+                      onLocationSelect={(location) => {
+                        // Actualizar la ubicación en el formulario
+                        onChange(location);
+                        
+                        // Actualizar siempre los campos de dirección cuando se mueve el marcador
+                        if (location.street) {
+                          setValue('calle', location.street, { shouldValidate: true });
+                        }
+                        
+                        if (location.number) {
+                          setValue('numero', location.number, { shouldValidate: true });
+                        }
+                      }}
+                      initialLocation={value || { 
+                        lat: 19.0400, 
+                        lng: -98.2476, 
+                        address: 'Centro Comercial Angelópolis, Puebla' 
+                      }}
                       className="h-full w-full"
                     />
                   )}
                 />
               </div>
-              <p className="mt-2 text-xs text-[var(--text-secondary)] mb-6">Arrastra el marcador para ajustar la ubicación exacta</p>
               
               {errors.ubicacion && (
-                <p className="mt-2 text-sm text-red-500 mb-6">{errors.ubicacion.message}</p>
+                <p className="mt-2 text-sm text-red-500 mb-6">
+                  {errors.ubicacion.message}
+                </p>
               )}
               
-              <div className="space-y-4 mb-6">
-                <div className="flex flex-col md:flex-row gap-4 w-full">
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Importante:</strong> Asegúrate de que el marcador esté en la ubicación exacta donde se necesitan los baños.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <div className="flex justify-between">
+                <motion.button
+                  type="button"
+                  onClick={prevStep}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-6 py-3 border border-gray-300 text-[var(--text-primary)] rounded-lg font-medium shadow-sm hover:bg-gray-50 transition-all"
+                >
+                  <svg className="w-4 h-4 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                  </svg>
+                  Regresar
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={nextStep}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-6 py-3 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
+                >
+                  Siguiente
+                  <svg className="w-4 h-4 ml-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        );
+        
+      case 4:
+        return (
+          <motion.div
+            key="step4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Información de la dirección</h3>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">Por favor verifica o completa los detalles de la dirección.</p>
+              
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-3/4">
                     <label htmlFor="calle" className={labelStyles}>
                       Calle *
@@ -442,7 +544,7 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                       id="calle"
                       type="text"
                       className={`w-full ${inputStyles} ${errors.calle ? 'border-red-400' : ''}`}
-                      placeholder="Nombre de la calle"
+                      placeholder="Ej: Av. Ejército Mexicano"
                       {...register('calle')}
                     />
                     {errors.calle && (
@@ -458,7 +560,7 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                       id="numero"
                       type="text"
                       className={`w-full ${inputStyles} ${errors.numero ? 'border-red-400' : ''}`}
-                      placeholder="Núm."
+                      placeholder="Ej: 123"
                       {...register('numero')}
                     />
                     {errors.numero && (
@@ -467,36 +569,34 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
                   </div>
                 </div>
 
-                <div className="w-full">
+                <div>
                   <label htmlFor="colonia" className={labelStyles}>
-                    Colonia *
+                    Colonia o fraccionamiento *
                   </label>
                   <input
                     id="colonia"
                     type="text"
                     className={`w-full ${inputStyles} ${errors.colonia ? 'border-red-400' : ''}`}
-                    placeholder="Nombre de la colonia o fraccionamiento"
+                    placeholder="Ej: Centro Histórico"
                     {...register('colonia')}
                   />
                   {errors.colonia && (
                     <p className={errorStyles}>{errors.colonia.message}</p>
                   )}
                 </div>
-              </div>
 
-
-              
-              <div className="mt-6">
-                <label htmlFor="notas" className={labelStyles}>
-                  Notas adicionales (opcional)
-                </label>
-                <textarea
-                  id="notas"
-                  rows={3}
-                  className={`${inputStyles} resize-none`}
-                  placeholder="Especifica cualquier requerimiento especial o información adicional que debamos tener en cuenta..."
-                  {...register('notas')}
-                />
+                <div>
+                  <label htmlFor="notas" className={labelStyles}>
+                    Referencias adicionales (opcional)
+                  </label>
+                  <textarea
+                    id="notas"
+                    rows={3}
+                    className={`${inputStyles} resize-none`}
+                    placeholder="Ej: Frente a la iglesia, junto al Oxxo, portón negro, etc."
+                    {...register('notas')}
+                  />
+                </div>
               </div>
             </div>
 
@@ -548,6 +648,7 @@ export default function SolicitudForm({ onSubmitSuccess }: SolicitudFormProps) {
       { number: 1, label: 'Datos' },
       { number: 2, label: 'Servicio' },
       { number: 3, label: 'Ubicación' },
+      { number: 4, label: 'Dirección' },
     ];
 
     return (

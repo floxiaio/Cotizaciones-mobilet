@@ -15,25 +15,35 @@ export const solicitudSchema = yup.object().shape({
     .matches(phoneRegExp, 'Ingresa un número de teléfono válido (10 dígitos)'),
     
   ubicacion: yup.object().shape({
-    lat: yup.number().required('Selecciona una ubicación en el mapa'),
-    lng: yup.number().required('Selecciona una ubicación en el mapa'),
-    address: yup.string().required('La dirección es requerida'),
-  }).required('La ubicación es requerida'),
+    lat: yup.number()
+      .required('Por favor selecciona una ubicación en el mapa')
+      .test('is-valid-lat', 'La latitud no es válida', value => 
+        value >= -90 && value <= 90
+      ),
+    lng: yup.number()
+      .required('Por favor selecciona una ubicación en el mapa')
+      .test('is-valid-lng', 'La longitud no es válida', value => 
+        value >= -180 && value <= 180
+      ),
+    address: yup.string()
+      .required('La dirección es requerida')
+      .min(5, 'La dirección debe tener al menos 5 caracteres'),
+  }).required('Por favor selecciona una ubicación en el mapa'),
   
   calle: yup
     .string()
-    .required('La calle es requerida')
+    .required('El nombre de la calle es requerido')
     .min(3, 'La calle debe tener al menos 3 caracteres'),
     
   numero: yup
     .string()
     .required('El número es requerido')
-    .matches(/^[0-9]+[a-zA-Z0-9\s-]*$/, 'Ingresa un número de calle válido'),
+    .matches(/^[0-9]+[a-zA-Z0-9\s-]*$/, 'Ingresa un número de calle válido (ej. 123 o 123-A)'),
     
   colonia: yup
     .string()
-    .required('La colonia es requerida')
-    .min(3, 'La colonia debe tener al menos 3 caracteros'),
+    .required('La colonia o fraccionamiento es requerido')
+    .min(3, 'La colonia debe tener al menos 3 caracteres'),
   
   cantidadBanos: yup
     .number()
@@ -70,6 +80,7 @@ export const solicitudSchema = yup.object().shape({
     .nullable()
     .default(undefined)
     .max(500, 'Las notas no pueden tener más de 500 caracteres')
+    .transform((value) => (value === '' ? null : value))
 });
 
 // Definir el tipo base a partir del esquema

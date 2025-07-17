@@ -29,6 +29,8 @@ export interface Location {
   lat: number;
   lng: number;
   address?: string;
+  street?: string;
+  number?: string;
 }
 
 export interface MapInputProps {
@@ -150,13 +152,16 @@ const MapInput: React.FC<MapInputProps> = ({
     initialLocation.lat || SAN_ANDRES_CHOLULA.lat,
     initialLocation.lng || SAN_ANDRES_CHOLULA.lng
   ]);
-  const [address, setAddress] = useState(initialLocation.address || 'Cargando dirección...');
+  const [address, setAddress] = useState<string>(() => {
+    return typeof initialLocation.address === 'string' ? initialLocation.address : 'Cargando dirección...';
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const mapRef = useRef<L.Map>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const isDragging = useRef(false);
+  const mapInitialized = useRef(false);
 
   // Inicializar el estado del cliente
   useEffect(() => {
@@ -175,13 +180,15 @@ const MapInput: React.FC<MapInputProps> = ({
         if (address === 'Cargando dirección...' || 
             position[0] !== lat || 
             position[1] !== lng) {
-          const initialAddress = await getAddressFromCoords(lat, lng);
-          setAddress(initialAddress);
+          const locationData = await getAddressFromCoords(lat, lng);
+          setAddress(locationData.address);
           setPosition([lat, lng]);
           onLocationSelect({
             lat,
             lng,
-            address: initialAddress
+            address: locationData.address,
+            street: locationData.street,
+            number: locationData.number
           });
         }
       } catch (err) {
@@ -197,11 +204,11 @@ const MapInput: React.FC<MapInputProps> = ({
     }
   }, [isClient]); // Solo dependemos de isClient
 
-  // Función para obtener la dirección a partir de coordenadas
-  const getAddressFromCoords = async (lat: number, lng: number): Promise<string> => {
+  // Función para obtener la dirección a partir de coordenadas con más precisión
+  const getAddressFromCoords = async (lat: number, lng: number): Promise<{address: string; street: string; number: string}> => {
     try {
       const response = await fetch(
-        `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`
+        `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}&language=es&limit=1`
       );
       
       if (!response.ok) {
@@ -209,10 +216,44 @@ const MapInput: React.FC<MapInputProps> = ({
       }
       
       const data = await response.json();
-      return data.features[0]?.place_name || 'Dirección no disponible';
+      const feature = data.features[0];
+      
+      if (!feature) {
+        return { 
+          address: 'Dirección no disponible',
+          street: 'Dirección no disponible',
+          number: ''
+        };
+      }
+      
+      // Intentar obtener la dirección más precisa posible
+      const address = feature.place_name_es || feature.place_name || 'Dirección no disponible';
+      
+      // Extraer calle y número si están disponibles en las propiedades
+      let street = feature.text_es || feature.text || '';
+      let number = feature.address || feature.house_number || '';
+      
+      // Si no encontramos el número en las propiedades, intentamos extraerlo del texto
+      if (!number && street) {
+        const numberMatch = street.match(/(\d+[a-zA-Z]?)$/);
+        if (numberMatch) {
+          number = numberMatch[0];
+          street = street.substring(0, numberMatch.index).trim();
+        }
+      }
+      
+      return {
+        address: address || 'Dirección no disponible',
+        street: street || 'Calle no disponible',
+        number: number || ''
+      };
     } catch (err) {
       console.error('Error al obtener la dirección:', err);
-      return 'Error al cargar la dirección';
+      return { 
+        address: 'Error al cargar la dirección',
+        street: 'Error al cargar la calle',
+        number: ''
+      };
     }
   };
 
@@ -236,9 +277,17 @@ const MapInput: React.FC<MapInputProps> = ({
     
     try {
       setIsLoading(true);
-      const newAddress = await getAddressFromCoords(lat, lng);
+      const { address: newAddress, street, number } = await getAddressFromCoords(lat, lng);
       setAddress(newAddress);
-      onLocationSelect({ lat, lng, address: newAddress });
+      
+      // Notificar al componente padre con la información detallada
+      onLocationSelect({
+        lat,
+        lng,
+        address: newAddress,
+        street: street || newAddress.split(',')[0], // Usar la calle del mapa o la primera parte de la dirección
+        number: number || '' // Usar el número del mapa o cadena vacía
+      });
     } catch (err) {
       setError('Error al actualizar la ubicación');
       console.error('Error al actualizar la ubicación:', err);
@@ -248,19 +297,45 @@ const MapInput: React.FC<MapInputProps> = ({
   }, [onLocationSelect]);
 
   // Manejador de arrastre del marcador
-  const handleMarkerDragEnd = useCallback(async (e: L.LeafletEvent) => {
+  const handleMarkerDragStart = useCallback(() => {
+    // Marcar que estamos arrastrando
     isDragging.current = true;
+  }, []);
+
+  const handleMarkerDrag = useCallback((e: L.LeafletEvent) => {
+    // Actualizar la posición mientras se arrastra, pero no hacer llamadas a la API
     const { lat, lng } = e.target.getLatLng();
     setPosition([lat, lng]);
-    
+  }, []);
+
+  const handleMarkerDragEnd = useCallback(async (e: L.LeafletEvent) => {
     try {
       setIsLoading(true);
-      const newAddress = await getAddressFromCoords(lat, lng);
-      setAddress(newAddress);
-      onLocationSelect({ lat, lng, address: newAddress });
+      const { lat, lng } = e.target.getLatLng();
+      
+      // Actualizar la posición final
+      setPosition([lat, lng]);
+      
+      // Obtener la dirección exacta de la ubicación final
+      const locationData = await getAddressFromCoords(lat, lng);
+      
+      // Actualizar el estado con la información de la ubicación final
+      setAddress(locationData.address);
+      
+      // Notificar al componente padre con la información detallada
+      onLocationSelect({
+        lat,
+        lng,
+        address: locationData.address,
+        street: locationData.street,
+        number: locationData.number
+      });
+      
+      // Marcar que ya no estamos arrastrando
+      isDragging.current = false;
     } catch (err) {
       setError('Error al actualizar la ubicación');
-      console.error(err);
+      console.error('Error al actualizar la ubicación:', err);
     } finally {
       setIsLoading(false);
     }
@@ -300,14 +375,18 @@ const MapInput: React.FC<MapInputProps> = ({
           icon={defaultIcon}
           draggable={true}
           eventHandlers={{
+            dragstart: handleMarkerDragStart,
+            drag: handleMarkerDrag,
             dragend: handleMarkerDragEnd,
-            click: () => {
-              // Manejar clic en el marcador si es necesario
-            }
           }}
           ref={(ref) => {
             if (ref) {
               markerRef.current = ref;
+              // Si es la primera vez que se renderiza, centrar el mapa en la posición inicial
+              if (mapRef.current && !mapInitialized.current) {
+                mapRef.current.setView(position, zoom);
+                mapInitialized.current = true;
+              }
             }
           }}
         >
